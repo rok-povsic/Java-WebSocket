@@ -983,7 +983,7 @@ public class Draft_6455 extends Draft {
       throws InvalidDataException {
     try {
       webSocketImpl.getWebSocketListener()
-          .onWebsocketMessage(webSocketImpl, Charsetfunctions.stringUtf8(frame.getPayloadData()));
+          .onWebsocketMessage(webSocketImpl, frame.getPayloadData());
     } catch (RuntimeException e) {
       logRuntimeException(webSocketImpl, e);
     }
