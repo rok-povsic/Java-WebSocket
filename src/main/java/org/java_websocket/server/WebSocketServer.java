@@ -67,6 +67,7 @@ import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.handshake.Handshakedata;
+import org.java_websocket.util.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -708,14 +709,14 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
   }
 
   @Override
-  public final void onWebsocketMessage(WebSocket conn, String message) {
-    onMessage(conn, message);
+  public final void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos) {
+    onMessage(conn, message, messageArrivedAtNanos);
   }
 
 
   @Override
-  public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob) {
-    onMessage(conn, blob);
+  public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos) {
+    onMessage(conn, blob, messageArrivedAtNanos);
   }
 
   @Override
@@ -893,9 +894,10 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
    *
    * @param conn    The <tt>WebSocket</tt> instance this event is occurring on.
    * @param message The UTF-8 decoded message that was received.
-   * @see #onMessage(WebSocket, ByteBuffer)
+   * @param messageArrivedAtNanos The epoch in nanos when the message arrived.
+   * @see #onMessage(WebSocket, ByteBuffer, long)
    **/
-  public abstract void onMessage(WebSocket conn, String message);
+  public abstract void onMessage(WebSocket conn, String message, long messageArrivedAtNanos);
 
   /**
    * Called when errors occurs. If an error causes the websocket connection to fail {@link
@@ -921,9 +923,10 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
    *
    * @param conn    The <tt>WebSocket</tt> instance this event is occurring on.
    * @param message The binary message that was received.
-   * @see #onMessage(WebSocket, ByteBuffer)
+   * @param messageArrivedAtNanos The epoch in nanos when the message arrived.
+   * @see #onMessage(WebSocket, ByteBuffer, long)
    **/
-  public void onMessage(WebSocket conn, ByteBuffer message) {
+  public void onMessage(WebSocket conn, ByteBuffer message, long messageArrivedAtNanos) {
   }
 
   /**
@@ -1082,8 +1085,12 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
           ByteBuffer buf;
           ws = iqueue.take();
           buf = ws.inQueue.poll();
+
+          // Hopefully this case doesn't happen. To recognize it, let's remove 5 minutes here.
+          long messageArrivedAtNanos = DateTimeUtils.currentTimeNanos() - 1_000_000_000 * 60 * 5;
+
           assert (buf != null);
-          doDecode(ws, buf);
+          doDecode(ws, buf, messageArrivedAtNanos);
           ws = null;
         }
       } catch (InterruptedException e) {
@@ -1107,11 +1114,12 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
      *
      * @param ws  the Websocket
      * @param buf the buffer to decode to
+     * @param messageArrivedAtNanos the epoch in nanos when the message arrived
      * @throws InterruptedException thrown by pushBuffer
      */
-    private void doDecode(WebSocketImpl ws, ByteBuffer buf) throws InterruptedException {
+    private void doDecode(WebSocketImpl ws, ByteBuffer buf, long messageArrivedAtNanos) throws InterruptedException {
       try {
-        ws.decode(buf);
+        ws.decode(buf, messageArrivedAtNanos);
       } catch (Exception e) {
         log.error("Error while reading from remote connection", e);
       } finally {

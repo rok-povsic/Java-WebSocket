@@ -222,7 +222,7 @@ public class WebSocketImpl implements WebSocket {
    *
    * @param socketBuffer the ByteBuffer to decode
    */
-  public void decode(ByteBuffer socketBuffer) {
+  public void decode(ByteBuffer socketBuffer, long messageArrivedAtNanos) {
     assert (socketBuffer.hasRemaining());
     if (log.isTraceEnabled()) {
       log.trace("process({}): ({})", socketBuffer.remaining(),
@@ -231,16 +231,16 @@ public class WebSocketImpl implements WebSocket {
     }
     if (readyState != ReadyState.NOT_YET_CONNECTED) {
       if (readyState == ReadyState.OPEN) {
-        decodeFrames(socketBuffer);
+        decodeFrames(socketBuffer, messageArrivedAtNanos);
       }
     } else {
       if (decodeHandshake(socketBuffer) && (!isClosing() && !isClosed())) {
         assert (tmpHandshakeBytes.hasRemaining() != socketBuffer.hasRemaining() || !socketBuffer
             .hasRemaining()); // the buffers will never have remaining bytes at the same time
         if (socketBuffer.hasRemaining()) {
-          decodeFrames(socketBuffer);
+          decodeFrames(socketBuffer, messageArrivedAtNanos);
         } else if (tmpHandshakeBytes.hasRemaining()) {
-          decodeFrames(tmpHandshakeBytes);
+          decodeFrames(tmpHandshakeBytes, messageArrivedAtNanos);
         }
       }
     }
@@ -393,13 +393,13 @@ public class WebSocketImpl implements WebSocket {
     return false;
   }
 
-  private void decodeFrames(ByteBuffer socketBuffer) {
+  private void decodeFrames(ByteBuffer socketBuffer, long messageArrivedAtNanos) {
     List<Framedata> frames;
     try {
       frames = draft.translateFrame(socketBuffer);
       for (Framedata f : frames) {
         log.trace("matched frame: {}", f);
-        draft.processFrame(this, f);
+        draft.processFrame(this, f, messageArrivedAtNanos);
       }
     } catch (LimitExceededException e) {
       if (e.getLimit() == Integer.MAX_VALUE) {

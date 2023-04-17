@@ -202,9 +202,10 @@ public abstract class Draft {
    *
    * @param webSocketImpl the websocketimpl used for this draft
    * @param frame         the frame which is supposed to be handled
+   * @param messageArrivedAtNanos the epoch in nanos when the message arrived
    * @throws InvalidDataException will be thrown on invalid data
    */
-  public abstract void processFrame(WebSocketImpl webSocketImpl, Framedata frame)
+  public abstract void processFrame(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos)
       throws InvalidDataException;
 
   public List<Framedata> continuousFrame(Opcode op, ByteBuffer buffer, boolean fin) {

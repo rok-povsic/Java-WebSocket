@@ -65,6 +65,7 @@ import org.java_websocket.handshake.HandshakeImpl1Client;
 import org.java_websocket.handshake.Handshakedata;
 import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.protocols.IProtocol;
+import org.java_websocket.util.DateTimeUtils;
 
 /**
  * A subclass must implement at least <var>onOpen</var>, <var>onClose</var>, and
@@ -513,7 +514,8 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
 
     try {
       while (!isClosing() && !isClosed() && (readBytes = istream.read(rawbuffer)) != -1) {
-        engine.decode(ByteBuffer.wrap(rawbuffer, 0, readBytes));
+        long messageArrivedAtNanos = DateTimeUtils.currentTimeNanos();
+        engine.decode(ByteBuffer.wrap(rawbuffer, 0, readBytes), messageArrivedAtNanos);
       }
       engine.eot();
     } catch (IOException e) {
@@ -632,13 +634,13 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    * Calls subclass' implementation of <var>onMessage</var>.
    */
   @Override
-  public final void onWebsocketMessage(WebSocket conn, String message) {
-    onMessage(message);
+  public final void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos) {
+    onMessage(message, messageArrivedAtNanos);
   }
 
   @Override
-  public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob) {
-    onMessage(blob);
+  public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos) {
+    onMessage(blob, messageArrivedAtNanos);
   }
 
   /**
@@ -749,9 +751,10 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    * Callback for string messages received from the remote host
    *
    * @param message The UTF-8 decoded message that was received.
+   * @param messageArrivedAtNanos The epoch in nanos when the message arrived.
    * @see #onMessage(ByteBuffer)
    **/
-  public abstract void onMessage(String message);
+  public abstract void onMessage(String message, long messageArrivedAtNanos);
 
   /**
    * Called after the websocket connection has been closed.
@@ -777,9 +780,10 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    * Callback for binary messages received from the remote host
    *
    * @param bytes The binary message that was received.
-   * @see #onMessage(String)
+   * @param messageArrivedAtNanos The epoch in nanos when them message arrived.
+   * @see #onMessage(String, long)
    **/
-  public void onMessage(ByteBuffer bytes) {
+  public void onMessage(ByteBuffer bytes, long messageArrivedAtNanos) {
     //To overwrite
   }
 
