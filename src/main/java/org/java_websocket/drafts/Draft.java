@@ -205,8 +205,8 @@ public abstract class Draft {
    * @param messageArrivedAtNanos the epoch in nanos when the message arrived
    * @throws InvalidDataException will be thrown on invalid data
    */
-  public abstract void processFrame(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos)
-      throws InvalidDataException;
+  public abstract void processFrame(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos,
+      boolean socketHasMoreAvailable) throws InvalidDataException;
 
   public List<Framedata> continuousFrame(Opcode op, ByteBuffer buffer, boolean fin) {
     if (op != Opcode.BINARY && op != Opcode.TEXT) {

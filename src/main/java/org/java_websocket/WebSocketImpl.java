@@ -222,7 +222,7 @@ public class WebSocketImpl implements WebSocket {
    *
    * @param socketBuffer the ByteBuffer to decode
    */
-  public void decode(ByteBuffer socketBuffer, long messageArrivedAtNanos) {
+  public void decode(ByteBuffer socketBuffer, long messageArrivedAtNanos, boolean socketHasMoreAvailable) {
     assert (socketBuffer.hasRemaining());
     if (log.isTraceEnabled()) {
       log.trace("process({}): ({})", socketBuffer.remaining(),
@@ -231,16 +231,16 @@ public class WebSocketImpl implements WebSocket {
     }
     if (readyState != ReadyState.NOT_YET_CONNECTED) {
       if (readyState == ReadyState.OPEN) {
-        decodeFrames(socketBuffer, messageArrivedAtNanos);
+        decodeFrames(socketBuffer, messageArrivedAtNanos, socketHasMoreAvailable);
       }
     } else {
       if (decodeHandshake(socketBuffer) && (!isClosing() && !isClosed())) {
         assert (tmpHandshakeBytes.hasRemaining() != socketBuffer.hasRemaining() || !socketBuffer
             .hasRemaining()); // the buffers will never have remaining bytes at the same time
         if (socketBuffer.hasRemaining()) {
-          decodeFrames(socketBuffer, messageArrivedAtNanos);
+          decodeFrames(socketBuffer, messageArrivedAtNanos, socketHasMoreAvailable);
         } else if (tmpHandshakeBytes.hasRemaining()) {
-          decodeFrames(tmpHandshakeBytes, messageArrivedAtNanos);
+          decodeFrames(tmpHandshakeBytes, messageArrivedAtNanos, socketHasMoreAvailable);
         }
       }
     }
@@ -393,13 +393,13 @@ public class WebSocketImpl implements WebSocket {
     return false;
   }
 
-  private void decodeFrames(ByteBuffer socketBuffer, long messageArrivedAtNanos) {
+  private void decodeFrames(ByteBuffer socketBuffer, long messageArrivedAtNanos, boolean socketHasMoreAvailable) {
     List<Framedata> frames;
     try {
       frames = draft.translateFrame(socketBuffer);
       for (Framedata f : frames) {
         log.trace("matched frame: {}", f);
-        draft.processFrame(this, f, messageArrivedAtNanos);
+        draft.processFrame(this, f, messageArrivedAtNanos, socketHasMoreAvailable);
       }
     } catch (LimitExceededException e) {
       if (e.getLimit() == Integer.MAX_VALUE) {
