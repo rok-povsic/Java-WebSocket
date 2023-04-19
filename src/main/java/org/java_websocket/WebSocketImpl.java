@@ -403,7 +403,9 @@ public class WebSocketImpl implements WebSocket {
     try {
       frames = draft.translateFrame(socketBuffer);
       for (Framedata f : frames) {
-        log.trace("matched frame: {}", f);
+        if (log.isTraceEnabled()) {
+          log.trace("matched frame: {}", f);
+        }
         draft.processFrame(this, f, messageArrivedAtNanos, socketHasMoreAvailable, socketHasNextMessageImmediately,
             readTookNanos);
       }
