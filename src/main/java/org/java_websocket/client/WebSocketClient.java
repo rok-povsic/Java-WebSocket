@@ -513,10 +513,18 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
     int readBytes;
 
     try {
+      boolean socketHasNextMessageImmediately = false;
+      long prev = System.nanoTime();
       while (!isClosing() && !isClosed() && (readBytes = istream.read(rawbuffer)) != -1) {
+        long readTookNanos = System.nanoTime() - prev;
         boolean socketHasAvailableData = istream.available() > 0;
         long messageArrivedAtNanos = DateTimeUtils.currentTimeNanos();
-        engine.decode(ByteBuffer.wrap(rawbuffer, 0, readBytes), messageArrivedAtNanos, socketHasAvailableData);
+
+        engine.decode(ByteBuffer.wrap(rawbuffer, 0, readBytes), messageArrivedAtNanos, socketHasAvailableData,
+            socketHasNextMessageImmediately, readTookNanos);
+
+        socketHasNextMessageImmediately = istream.available() > 0;
+        prev = System.nanoTime();
       }
       engine.eot();
     } catch (IOException e) {
@@ -636,14 +644,14 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    */
   @Override
   public final void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos,
-      boolean socketHasAvailableData) {
-    onMessage(message, messageArrivedAtNanos, socketHasAvailableData);
+      boolean socketHasAvailableData, boolean socketHasNextMessageImmediately, long readTookNanos) {
+    onMessage(message, messageArrivedAtNanos, socketHasAvailableData, socketHasNextMessageImmediately, readTookNanos);
   }
 
   @Override
   public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos,
-      boolean socketHasAvailableData) {
-    onMessage(blob, messageArrivedAtNanos, socketHasAvailableData);
+      boolean socketHasAvailableData, boolean socketHasNextMessageImmediately, long readTookNanos) {
+    onMessage(blob, messageArrivedAtNanos, socketHasAvailableData, socketHasNextMessageImmediately, readTookNanos);
   }
 
   /**
@@ -757,7 +765,8 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    * @param messageArrivedAtNanos The epoch in nanos when the message arrived.
    * @see #onMessage(ByteBuffer)
    **/
-  public abstract void onMessage(String message, long messageArrivedAtNanos, boolean socketHasAvailableData);
+  public abstract void onMessage(String message, long messageArrivedAtNanos, boolean socketHasAvailableData,
+      boolean socketHasNextMessageImmediately, long readTookNanos);
 
   /**
    * Called after the websocket connection has been closed.
@@ -786,7 +795,8 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    * @param messageArrivedAtNanos The epoch in nanos when them message arrived.
    * @see #onMessage(String, long)
    **/
-  public void onMessage(ByteBuffer bytes, long messageArrivedAtNanos, boolean socketHasAvailableData) {
+  public void onMessage(ByteBuffer bytes, long messageArrivedAtNanos, boolean socketHasAvailableData,
+      boolean socketHasNextMessageImmediately, long readTookNanos) {
     //To overwrite
   }
 

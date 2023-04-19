@@ -90,7 +90,8 @@ public interface WebSocketListener {
    * @param message The UTF-8 decoded message that was received.
    * @param messageArrivedAtNanos The epoch in nanos when the message arrived.
    */
-  void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos, boolean socketHasMoreAvailable);
+  void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos, boolean socketHasMoreAvailable,
+      boolean socketHasNextMessageImmediately, long readTookNanos);
 
   /**
    * Called when an entire binary frame has been received. Do whatever you want here...
@@ -99,7 +100,8 @@ public interface WebSocketListener {
    * @param blob The binary message that was received.
    * @param messageArrivedAtNanos The epoch in nanos when the message arrived.
    */
-  void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos, boolean socketHasMoreAvailable);
+  void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos, boolean socketHasMoreAvailable,
+      boolean socketHasNextMessageImmediately, long readTookNanos);
 
   /**
    * Called after <var>onHandshakeReceived</var> returns <var>true</var>. Indicates that a complete
