@@ -710,17 +710,15 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
 
   @Override
   public final void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, boolean socketHasNextMessageImmediately, long readTookNanos) {
-    onMessage(conn, message, messageArrivedAtNanos, socketHasAvailableData, socketHasNextMessageImmediately,
-        readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos) {
+    onMessage(conn, message, messageArrivedAtNanos, socketHasAvailableData, readTookNanos);
   }
 
 
   @Override
   public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, boolean socketHasNextMessageImmediately, long readTookNanos) {
-    onMessage(conn, blob, messageArrivedAtNanos, socketHasAvailableData, socketHasNextMessageImmediately,
-        readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos) {
+    onMessage(conn, blob, messageArrivedAtNanos, socketHasAvailableData, readTookNanos);
   }
 
   @Override
@@ -902,7 +900,7 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
    * @see #onMessage(WebSocket, ByteBuffer, long)
    **/
   public abstract void onMessage(WebSocket conn, String message, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, boolean socketHasNextMessageImmediately, long readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos);
 
   /**
    * Called when errors occurs. If an error causes the websocket connection to fail {@link
@@ -932,7 +930,7 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
    * @see #onMessage(WebSocket, ByteBuffer, long)
    **/
   public void onMessage(WebSocket conn, ByteBuffer message, long messageArrivedAtNanos, boolean socketHasAvailableData,
-      boolean socketHasNextMessageImmediately, long readTookNanos) {
+      long readTookNanos) {
   }
 
   /**
@@ -1093,7 +1091,7 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
           buf = ws.inQueue.poll();
 
           assert (buf != null);
-          doDecode(ws, buf, Long.MIN_VALUE, false, false, Long.MIN_VALUE);
+          doDecode(ws, buf, Long.MIN_VALUE, Long.MIN_VALUE);
           ws = null;
         }
       } catch (InterruptedException e) {
@@ -1120,11 +1118,10 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
      * @param messageArrivedAtNanos the epoch in nanos when the message arrived
      * @throws InterruptedException thrown by pushBuffer
      */
-    private void doDecode(WebSocketImpl ws, ByteBuffer buf, long messageArrivedAtNanos, boolean socketHasAvailableData,
-        boolean socketHasNextMessageImmediately, long readTookNanos)
+    private void doDecode(WebSocketImpl ws, ByteBuffer buf, long messageArrivedAtNanos, long readTookNanos)
         throws InterruptedException {
       try {
-        ws.decode(buf, messageArrivedAtNanos, socketHasAvailableData, socketHasNextMessageImmediately, readTookNanos);
+        ws.decode(buf, messageArrivedAtNanos, readTookNanos);
       } catch (Exception e) {
         log.error("Error while reading from remote connection", e);
       } finally {

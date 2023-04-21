@@ -206,7 +206,7 @@ public abstract class Draft {
    * @throws InvalidDataException will be thrown on invalid data
    */
   public abstract void processFrame(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos,
-      boolean socketHasMoreAvailable, boolean socketHasNextMessageImmediately, long readTookNanos) throws InvalidDataException;
+      boolean socketHasMoreAvailable, long readTookNanos) throws InvalidDataException;
 
   public List<Framedata> continuousFrame(Opcode op, ByteBuffer buffer, boolean fin) {
     if (op != Opcode.BINARY && op != Opcode.TEXT) {

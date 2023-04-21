@@ -222,8 +222,7 @@ public class WebSocketImpl implements WebSocket {
    *
    * @param socketBuffer the ByteBuffer to decode
    */
-  public void decode(ByteBuffer socketBuffer, long messageArrivedAtNanos, boolean socketHasMoreAvailable,
-      boolean socketHasNextMessageImmediately, long readTookNanos) {
+  public void decode(ByteBuffer socketBuffer, long messageArrivedAtNanos, long readTookNanos) {
     assert (socketBuffer.hasRemaining());
     if (log.isTraceEnabled()) {
       log.trace("process({}): ({})", socketBuffer.remaining(),
@@ -232,19 +231,16 @@ public class WebSocketImpl implements WebSocket {
     }
     if (readyState != ReadyState.NOT_YET_CONNECTED) {
       if (readyState == ReadyState.OPEN) {
-        decodeFrames(socketBuffer, messageArrivedAtNanos, socketHasMoreAvailable, socketHasNextMessageImmediately,
-            readTookNanos);
+        decodeFrames(socketBuffer, messageArrivedAtNanos, readTookNanos);
       }
     } else {
       if (decodeHandshake(socketBuffer) && (!isClosing() && !isClosed())) {
         assert (tmpHandshakeBytes.hasRemaining() != socketBuffer.hasRemaining() || !socketBuffer
             .hasRemaining()); // the buffers will never have remaining bytes at the same time
         if (socketBuffer.hasRemaining()) {
-          decodeFrames(socketBuffer, messageArrivedAtNanos, socketHasMoreAvailable, socketHasNextMessageImmediately,
-              readTookNanos);
+          decodeFrames(socketBuffer, messageArrivedAtNanos, readTookNanos);
         } else if (tmpHandshakeBytes.hasRemaining()) {
-          decodeFrames(tmpHandshakeBytes, messageArrivedAtNanos, socketHasMoreAvailable,
-              socketHasNextMessageImmediately, readTookNanos);
+          decodeFrames(tmpHandshakeBytes, messageArrivedAtNanos, readTookNanos);
         }
       }
     }
@@ -397,17 +393,28 @@ public class WebSocketImpl implements WebSocket {
     return false;
   }
 
-  private void decodeFrames(ByteBuffer socketBuffer, long messageArrivedAtNanos, boolean socketHasMoreAvailable,
-      boolean socketHasNextMessageImmediately, long readTookNanos) {
+  private void decodeFrames(ByteBuffer socketBuffer, long messageArrivedAtNanos, long initialReadTookNanos) {
     List<Framedata> frames;
     try {
       frames = draft.translateFrame(socketBuffer);
-      for (Framedata f : frames) {
+      long prevDoneTime = 0;
+      for (int i = 0; i < frames.size(); i++) {
+        Framedata f = frames.get(i);
         if (log.isTraceEnabled()) {
           log.trace("matched frame: {}", f);
         }
-        draft.processFrame(this, f, messageArrivedAtNanos, socketHasMoreAvailable, socketHasNextMessageImmediately,
-            readTookNanos);
+
+        boolean socketHasMoreAvailable = i < frames.size() - 1;
+
+        long readTookNanos;
+        if (i == 0) {
+          readTookNanos = initialReadTookNanos;
+        } else {
+          readTookNanos = System.nanoTime() - prevDoneTime;
+        }
+
+        draft.processFrame(this, f, messageArrivedAtNanos, socketHasMoreAvailable, readTookNanos);
+        prevDoneTime = System.nanoTime();
       }
     } catch (LimitExceededException e) {
       if (e.getLimit() == Integer.MAX_VALUE) {
