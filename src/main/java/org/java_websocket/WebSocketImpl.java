@@ -404,7 +404,12 @@ public class WebSocketImpl implements WebSocket {
           log.trace("matched frame: {}", f);
         }
 
-        boolean socketHasMoreAvailable = i < frames.size() - 1;
+        boolean socketHasMoreAvailable = false;
+        boolean moreFrames = i < frames.size() - 1;
+        if (moreFrames) {
+          Opcode nextFrameOpcode = frames.get(i + 1).getOpcode();
+          socketHasMoreAvailable = nextFrameOpcode == Opcode.TEXT || nextFrameOpcode == Opcode.BINARY;
+        }
 
         long readTookNanos;
         if (i == 0) {
