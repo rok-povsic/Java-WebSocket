@@ -180,6 +180,11 @@ public class WebSocketImpl implements WebSocket {
   private Object attachment;
 
   /**
+   * How long the previous frame processing took (only tracked for TEXT and BINARY messages).
+   */
+  private long prevProcessTookNanos = Long.MAX_VALUE;
+
+  /**
    * Creates a websocket with server role
    *
    * @param listener The listener for this instance
@@ -418,7 +423,12 @@ public class WebSocketImpl implements WebSocket {
           readTookNanos = System.nanoTime() - prevDoneTime;
         }
 
-        draft.processFrame(this, f, messageArrivedAtNanos, socketHasMoreAvailable, readTookNanos);
+        boolean isFrameTextOrBinary = f.getOpcode() == Opcode.TEXT || f.getOpcode() == Opcode.BINARY;
+
+        long start = System.nanoTime();
+        draft.processFrame(this, f, messageArrivedAtNanos, socketHasMoreAvailable, readTookNanos, prevProcessTookNanos);
+        prevProcessTookNanos = isFrameTextOrBinary ? System.nanoTime() - start : Long.MAX_VALUE;
+
         prevDoneTime = System.nanoTime();
       }
     } catch (LimitExceededException e) {

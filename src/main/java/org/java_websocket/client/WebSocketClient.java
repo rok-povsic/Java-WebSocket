@@ -640,14 +640,14 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    */
   @Override
   public final void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, long readTookNanos) {
-    onMessage(message, messageArrivedAtNanos, socketHasAvailableData, readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos, long prevProcessTookNanos) {
+    onMessage(message, messageArrivedAtNanos, socketHasAvailableData, readTookNanos, prevProcessTookNanos);
   }
 
   @Override
   public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, long readTookNanos) {
-    onMessage(blob, messageArrivedAtNanos, socketHasAvailableData, readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos, long prevProcessTookNanos) {
+    onMessage(blob, messageArrivedAtNanos, socketHasAvailableData, readTookNanos, prevProcessTookNanos);
   }
 
   /**
@@ -762,7 +762,7 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    * @see #onMessage(ByteBuffer)
    **/
   public abstract void onMessage(String message, long messageArrivedAtNanos, boolean socketHasAvailableData,
-      long readTookNanos);
+      long readTookNanos, long prevProcessTookNanos);
 
   /**
    * Called after the websocket connection has been closed.
@@ -792,7 +792,7 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
    * @see #onMessage(String, long)
    **/
   public void onMessage(ByteBuffer bytes, long messageArrivedAtNanos, boolean socketHasAvailableData,
-      long readTookNanos) {
+      long readTookNanos, long prevProcessTookNanos) {
     //To overwrite
   }
 

@@ -891,7 +891,7 @@ public class Draft_6455 extends Draft {
 
   @Override
   public void processFrame(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos,
-      boolean socketHasMoreAvailable, long readTookNanos) throws InvalidDataException {
+      boolean socketHasMoreAvailable, long readTookNanos, long prevProcessTookNanos) throws InvalidDataException {
     Opcode curop = frame.getOpcode();
     if (curop == Opcode.CLOSING) {
       processFrameClosing(webSocketImpl, frame);
@@ -902,15 +902,17 @@ public class Draft_6455 extends Draft {
       webSocketImpl.getWebSocketListener().onWebsocketPong(webSocketImpl, frame);
     } else if (!frame.isFin() || curop == Opcode.CONTINUOUS) {
       processFrameContinuousAndNonFin(webSocketImpl, frame, curop, messageArrivedAtNanos, socketHasMoreAvailable,
-          readTookNanos);
+          readTookNanos, prevProcessTookNanos);
     } else if (currentContinuousFrame != null) {
       log.error("Protocol error: Continuous frame sequence not completed.");
       throw new InvalidDataException(CloseFrame.PROTOCOL_ERROR,
           "Continuous frame sequence not completed.");
     } else if (curop == Opcode.TEXT) {
-      processFrameText(webSocketImpl, frame, messageArrivedAtNanos, socketHasMoreAvailable, readTookNanos);
+      processFrameText(webSocketImpl, frame, messageArrivedAtNanos, socketHasMoreAvailable, readTookNanos,
+          prevProcessTookNanos);
     } else if (curop == Opcode.BINARY) {
-      processFrameBinary(webSocketImpl, frame, messageArrivedAtNanos, socketHasMoreAvailable, readTookNanos);
+      processFrameBinary(webSocketImpl, frame, messageArrivedAtNanos, socketHasMoreAvailable, readTookNanos,
+          prevProcessTookNanos);
     } else {
       log.error("non control or continious frame expected");
       throw new InvalidDataException(CloseFrame.PROTOCOL_ERROR,
@@ -927,13 +929,14 @@ public class Draft_6455 extends Draft {
    * @throws InvalidDataException if there is a protocol error
    */
   private void processFrameContinuousAndNonFin(WebSocketImpl webSocketImpl, Framedata frame,
-      Opcode curop, long messageArrivedAtNanos, boolean socketHasMoreAvailable, long readTookNanos)
+      Opcode curop, long messageArrivedAtNanos, boolean socketHasMoreAvailable, long readTookNanos,
+      long prevProcessTookNanos)
       throws InvalidDataException {
     if (curop != Opcode.CONTINUOUS) {
       processFrameIsNotFin(frame);
     } else if (frame.isFin()) {
       processFrameIsFin(webSocketImpl, frame, messageArrivedAtNanos, socketHasMoreAvailable,
-          readTookNanos);
+          readTookNanos, prevProcessTookNanos);
     } else if (currentContinuousFrame == null) {
       log.error("Protocol error: Continuous frame sequence was not started.");
       throw new InvalidDataException(CloseFrame.PROTOCOL_ERROR,
@@ -957,11 +960,11 @@ public class Draft_6455 extends Draft {
    * @param frame         the frame
    */
   private void processFrameBinary(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos,
-      boolean socketHasMoreAvailable, long readTookNanos) {
+      boolean socketHasMoreAvailable, long readTookNanos, long prevProcessTookNanos) {
     try {
       webSocketImpl.getWebSocketListener()
           .onWebsocketMessage(webSocketImpl, frame.getPayloadData(), messageArrivedAtNanos, socketHasMoreAvailable,
-              readTookNanos);
+              readTookNanos, prevProcessTookNanos);
     } catch (RuntimeException e) {
       logRuntimeException(webSocketImpl, e);
     }
@@ -985,11 +988,11 @@ public class Draft_6455 extends Draft {
    * @param frame         the frame
    */
   private void processFrameText(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos,
-      boolean socketHasMoreAvailable, long readTookNanos) throws InvalidDataException {
+      boolean socketHasMoreAvailable, long readTookNanos, long prevProcessTookNanos) throws InvalidDataException {
     try {
       webSocketImpl.getWebSocketListener()
           .onWebsocketMessage(webSocketImpl, frame.getPayloadData(), messageArrivedAtNanos, socketHasMoreAvailable,
-              readTookNanos);
+              readTookNanos, prevProcessTookNanos);
     } catch (RuntimeException e) {
       logRuntimeException(webSocketImpl, e);
     }
@@ -1003,7 +1006,7 @@ public class Draft_6455 extends Draft {
    * @throws InvalidDataException if there is a protocol error
    */
   private void processFrameIsFin(WebSocketImpl webSocketImpl, Framedata frame, long messageArrivedAtNanos,
-      boolean socketHasMoreAvailable, long readTookNanos)
+      boolean socketHasMoreAvailable, long readTookNanos, long prevProcessTookNanos)
       throws InvalidDataException {
     if (currentContinuousFrame == null) {
       log.trace("Protocol error: Previous continuous frame sequence not completed.");
@@ -1018,7 +1021,7 @@ public class Draft_6455 extends Draft {
       try {
         webSocketImpl.getWebSocketListener().onWebsocketMessage(webSocketImpl,
             Charsetfunctions.stringUtf8(currentContinuousFrame.getPayloadData()), messageArrivedAtNanos,
-            socketHasMoreAvailable, readTookNanos);
+            socketHasMoreAvailable, readTookNanos, prevProcessTookNanos);
       } catch (RuntimeException e) {
         logRuntimeException(webSocketImpl, e);
       }
@@ -1028,7 +1031,7 @@ public class Draft_6455 extends Draft {
       try {
         webSocketImpl.getWebSocketListener()
             .onWebsocketMessage(webSocketImpl, currentContinuousFrame.getPayloadData(), messageArrivedAtNanos,
-                socketHasMoreAvailable, readTookNanos);
+                socketHasMoreAvailable, readTookNanos, prevProcessTookNanos);
       } catch (RuntimeException e) {
         logRuntimeException(webSocketImpl, e);
       }

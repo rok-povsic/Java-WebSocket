@@ -710,15 +710,15 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
 
   @Override
   public final void onWebsocketMessage(WebSocket conn, String message, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, long readTookNanos) {
-    onMessage(conn, message, messageArrivedAtNanos, socketHasAvailableData, readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos, long prevProcessTookNanos) {
+    onMessage(conn, message, messageArrivedAtNanos, socketHasAvailableData, readTookNanos, prevProcessTookNanos);
   }
 
 
   @Override
   public final void onWebsocketMessage(WebSocket conn, ByteBuffer blob, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, long readTookNanos) {
-    onMessage(conn, blob, messageArrivedAtNanos, socketHasAvailableData, readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos, long prevProcessTookNanos) {
+    onMessage(conn, blob, messageArrivedAtNanos, socketHasAvailableData, readTookNanos, prevProcessTookNanos);
   }
 
   @Override
@@ -900,7 +900,7 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
    * @see #onMessage(WebSocket, ByteBuffer, long)
    **/
   public abstract void onMessage(WebSocket conn, String message, long messageArrivedAtNanos,
-      boolean socketHasAvailableData, long readTookNanos);
+      boolean socketHasAvailableData, long readTookNanos, long prevProcessTookNanos);
 
   /**
    * Called when errors occurs. If an error causes the websocket connection to fail {@link
@@ -930,7 +930,7 @@ public abstract class WebSocketServer extends AbstractWebSocket implements Runna
    * @see #onMessage(WebSocket, ByteBuffer, long)
    **/
   public void onMessage(WebSocket conn, ByteBuffer message, long messageArrivedAtNanos, boolean socketHasAvailableData,
-      long readTookNanos) {
+      long readTookNanos, long prevProcessTookNanos) {
   }
 
   /**
